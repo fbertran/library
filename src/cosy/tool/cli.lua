@@ -10,6 +10,16 @@ local i18n = I18n.load {
   "cosy.tool",
 }
 
+local function toboolean (x)
+  if x:lower () == "true" then
+    return true
+  elseif x:lower () == "false" then
+    return false
+  else
+    assert (false)
+  end
+end
+
 local parser = Arguments () {
   name        = "cosy-tool",
   description = i18n ["tool:description"] % {},
@@ -35,9 +45,9 @@ do
     if ok then
       toolname = args.tool
     elseif args:match "^unknown option" then
-      local option = args:match "^unknown option '(.*)'$"
-      for i = 1, # arguments do
-        if arguments [i]:find (option) == 1 then
+      local option = args:match "^unknown%s+option%s+'(.*)'$"
+      for i = 1, #arguments do
+        if arguments [i]:find (option, 1, true) == 1 then
           table.remove (arguments, i)
           break
         end
@@ -82,35 +92,40 @@ if mytool then
     name        = "cosy-tool",
     description = i18n ["tool:description"] % {},
     add_help    = {
-      action = function () print "here" end
+      action = function () end
     },
   }
   local command = parser:command (toolname) {
     description = mytool.description,
   }
+  local sorted      = {}
+  local equivalents = {}
   for key in pairs (parameters) do
+    key.key = key.key
+           or key.name:gsub ("%W", "_"):lower ()
+    sorted [#sorted+1] = key.key
+    equivalents [key.key] = key
+  end
+  table.sort (sorted)
+  for _, key in ipairs (sorted) do
+    local parameter = equivalents [key]
     local convert
-    if key.type == "number" then
+    if parameter.type == "number" then
       convert = tonumber
-    elseif key.type == "string" then
+    elseif parameter.type == "string" then
       convert = tostring
-    elseif key.type == "boolean" then
+    elseif parameter.type == "boolean" then
       convert = function (x)
-        if x:lower () == "true" then
-          return true
-        elseif x:lower () == "false" then
-          return false
-        else
-          assert (false)
-        end
+        toboolean (x)
+        return x
       end
-    elseif key.type == "function" then
+    elseif parameter.type == "function" then
       convert = function (x)
-        return assert (loadstring (x)) ()
+        return assert (load (x)) ()
       end
-    elseif getmetatable (key.type) == Layer.Proxy then
+    elseif getmetatable (parameter.type) == Layer.Proxy then
       convert = function (x)
-        if key.update then
+        if parameter.update then
           return Layer.require (x)
         else
           return {
@@ -121,11 +136,11 @@ if mytool then
     else
       assert (false)
     end
-    command:option ("--" .. key.name) {
-      description = key.description
-                 .. (key.type and " (" .. tostring (key.type) .. ")" or ""),
-      default     = key.default,
-      required    = key.default and false or true,
+    command:option ("--" .. parameter.key) {
+      description = parameter.description
+                 .. (parameter.type and " (of type " .. tostring (parameter.type) .. ")" or ""),
+      default     = parameter.default ~= nil and tostring (parameter.default),
+      required    = parameter.default == nil,
       convert     = convert,
     }
   end
@@ -142,11 +157,14 @@ end
 
 local all_found = true
 for key in pairs (parameters) do
-  if not arguments [key.name] then
-    print ("Argument " .. key.name .. " is mandatory.")
+  local value = arguments [key.key]
+  if not value then
+    print ("Argument " .. key.key .. " is mandatory.")
     all_found = false
   else
-    local value = arguments [key.name]
+    if key.type == "boolean" then
+      value = toboolean (value)
+    end
     Layer.Proxy.replacewith (key, value)
   end
 end

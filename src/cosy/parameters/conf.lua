@@ -325,7 +325,7 @@ return function (loader)
         end
         request [key] = f
       else
-        local f, err = loadstring (value)
+        local f, err = load (value)
         if not f then
           return nil, {
             _      = i18n ["check:iterator:function"],

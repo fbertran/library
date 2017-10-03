@@ -6,7 +6,6 @@ return function (loader)
 
   local Configuration = loader.load "cosy.configuration"
   local Digest        = loader.load "cosy.digest"
-  local App           = loader.load "cosy.configuration.layers".app
   local Jwt           = loader.require "jwt"
   local Time          = loader.require "socket".gettime
 
@@ -18,7 +17,7 @@ return function (loader)
   }
 
   if Configuration.token.secret == nil then
-    App.token = {
+    Configuration.token = {
       secret = Digest (math.random ())
     }
   end

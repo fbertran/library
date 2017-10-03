@@ -11,7 +11,6 @@ return function (loader)
   local Store         = loader.load "cosy.store"
   local Token         = loader.load "cosy.token"
   local Value         = loader.load "cosy.value"
-  local App           = loader.load "cosy.configuration.layers".app
   local Posix         = loader.require "posix"
   local Websocket     = loader.require "websocket"
   local Time          = loader.require "socket".gettime
@@ -97,16 +96,16 @@ return function (loader)
   end
 
   function Server.start ()
-    App.server            = {}
-    App.server.passphrase = Digest (math.random ())
-    App.server.token      = Token.administration ()
+    Configuration.server            = {}
+    Configuration.server.passphrase = Digest (math.random ())
+    Configuration.server.token      = Token.administration ()
     local addserver       = loader.scheduler.addserver
 
     loader.scheduler.addserver   = function (s, f)
       local ok, port = s:getsockname ()
       if ok then
-        App.server.socket = s
-        App.server.port   = tonumber (port)
+        Configuration.server.socket = s
+        Configuration.server.port   = tonumber (port)
       end
       addserver (s, f)
     end
@@ -116,7 +115,6 @@ return function (loader)
       port      = Configuration.server.port,
       protocols = {
         cosy = function (ws)
-          ws.ip, ws.port = ws.sock:getpeername ()
           local message
           local function send (t)
             local response = Value.expression (t)
@@ -284,7 +282,7 @@ return function (loader)
 
   function Server.stop ()
     os.remove (Configuration.server.data)
-    loader.scheduler.removeserver (App.server.socket)
+    loader.scheduler.removeserver (Configuration.server.socket)
     Nginx.stop ()
     Redis.stop ()
   end

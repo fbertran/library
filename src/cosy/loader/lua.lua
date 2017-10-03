@@ -43,6 +43,9 @@ return function (t)
   loader.hotswap.preload ["websocket.server_copas"] = function ()
     return loader.require "cosy.loader.patches.server_copas"
   end
+  loader.hotswap.preload ["websocket.client_sync"] = function ()
+    return loader.require "cosy.loader.patches.client_sync"
+  end
 
   local path = package.searchpath ("cosy.loader.lua", package.path)
   local parts = {}
