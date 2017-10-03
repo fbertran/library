@@ -32,10 +32,17 @@ text.shadow {
     stroke-opacity: .8;
 }
 .node {
-    cursor: move;
-    stroke: #000;
-    stroke-width: 1.5px;
+    fill: #ccc;
+    stroke: #fff;
+    stroke-width: 2px;
 }
+
+.link {
+    stroke: #777;
+    stroke-width: 2px;
+}
+
+
 .node.selected {
     fill: #f00;
 }
